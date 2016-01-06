@@ -1,0 +1,106 @@
+From f7c05e9cd2e7cb72b16fb2a93ce699b58943443d Mon Sep 17 00:00:00 2001
+From: Alexander Kurtakov <akurtako@redhat.com>
+Date: Tue, 9 Jun 2015 19:17:30 +0300
+Subject: [PATCH] Update to JGit 4.0
+
+---
+ pom.xml                                                   |  2 +-
+ .../buildtimestamp/jgit/JGitBuildTimestampProvider.java   | 15 +++++++--------
+ .../tycho/extras/buildtimestamp/jgit/PathFilter.java      | 10 +++++-----
+ 3 files changed, 13 insertions(+), 14 deletions(-)
+
+diff --git a/pom.xml b/pom.xml
+index c476294..717e6ee 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -74,7 +74,7 @@
+ 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+ 		<maven-version>3.0</maven-version>
+ 		<plugin-tools-version>3.3</plugin-tools-version>
+-		<jgit-version>3.5.3.201412180710-r</jgit-version>
++		<jgit-version>4.0.0.201506020755-rc3</jgit-version>
+ 		<!-- tycho-extras and tycho are normally developed and released in parallel using the same version -->
+ 		<tycho-version>${project.version}</tycho-version>
+ 		<min.jdk.version>1.7</min.jdk.version>
+diff --git a/tycho-buildtimestamp-jgit/src/main/java/org/eclipse/tycho/extras/buildtimestamp/jgit/JGitBuildTimestampProvider.java b/tycho-buildtimestamp-jgit/src/main/java/org/eclipse/tycho/extras/buildtimestamp/jgit/JGitBuildTimestampProvider.java
+index ae5b7fa..fb0d785 100644
+--- a/tycho-buildtimestamp-jgit/src/main/java/org/eclipse/tycho/extras/buildtimestamp/jgit/JGitBuildTimestampProvider.java
++++ b/tycho-buildtimestamp-jgit/src/main/java/org/eclipse/tycho/extras/buildtimestamp/jgit/JGitBuildTimestampProvider.java
+@@ -152,12 +152,10 @@ public class JGitBuildTimestampProvider implements BuildTimestampProvider {
+                             logger.warn("Fallback to default timestamp provider");
+                             return defaultTimestampProvider.getTimestamp(session, project, execution);
+                         } else {
+-                            throw new MojoExecutionException(
+-                                    message
+-                                            + "\n"
+-                                            + "You are trying to use tycho-buildtimestamp-jgit on a directory that has uncommitted changes (see details above)."
+-                                            + "\nEither commit all changes/add files to .gitignore, or enable fallback to default timestamp provider by configuring "
+-                                            + "\njgit.dirtyWorkingTree=warning for tycho-packaging-plugin");
++                            throw new MojoExecutionException(message + "\n"
++                                    + "You are trying to use tycho-buildtimestamp-jgit on a directory that has uncommitted changes (see details above)."
++                                    + "\nEither commit all changes/add files to .gitignore, or enable fallback to default timestamp provider by configuring "
++                                    + "\njgit.dirtyWorkingTree=warning for tycho-packaging-plugin");
+                         }
+                     }
+                 }
+@@ -172,12 +170,13 @@ public class JGitBuildTimestampProvider implements BuildTimestampProvider {
+                     // When dirtyBehaviour==ignore and no commit was ever done, 
+                     // the commit is null, so we fallback to the defaultTimestampProvider
+                     if (commit == null) {
+-                        logger.info("Fallback to default timestamp provider, because no commit could be found for that project (Shared but not commited yet).");
++                        logger.info(
++                                "Fallback to default timestamp provider, because no commit could be found for that project (Shared but not commited yet).");
+                         return defaultTimestampProvider.getTimestamp(session, project, execution);
+                     }
+                     return new Date(commit.getCommitTime() * 1000L);
+                 } finally {
+-                    walk.release();
++                    walk.close();
+                 }
+             } finally {
+                 repository.close();
+diff --git a/tycho-buildtimestamp-jgit/src/main/java/org/eclipse/tycho/extras/buildtimestamp/jgit/PathFilter.java b/tycho-buildtimestamp-jgit/src/main/java/org/eclipse/tycho/extras/buildtimestamp/jgit/PathFilter.java
+index ce349e9..96e6c51 100644
+--- a/tycho-buildtimestamp-jgit/src/main/java/org/eclipse/tycho/extras/buildtimestamp/jgit/PathFilter.java
++++ b/tycho-buildtimestamp-jgit/src/main/java/org/eclipse/tycho/extras/buildtimestamp/jgit/PathFilter.java
+@@ -18,7 +18,7 @@ import java.util.StringTokenizer;
+ 
+ import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+ import org.eclipse.jgit.errors.MissingObjectException;
+-import org.eclipse.jgit.ignore.IgnoreRule;
++import org.eclipse.jgit.ignore.FastIgnoreRule;
+ import org.eclipse.jgit.lib.Constants;
+ import org.eclipse.jgit.treewalk.TreeWalk;
+ import org.eclipse.jgit.treewalk.filter.TreeFilter;
+@@ -27,16 +27,16 @@ public class PathFilter extends TreeFilter {
+ 
+     private final byte[] basedir;
+ 
+-    private final List<IgnoreRule> rules;
++    private final List<FastIgnoreRule> rules;
+ 
+     public PathFilter(String basedir, String filters) {
+         this.basedir = Constants.encode(basedir);
+ 
+         if (filters != null) {
+             StringTokenizer st = new StringTokenizer(filters, "\n\r\f", false);
+-            List<IgnoreRule> rules = new ArrayList<IgnoreRule>();
++            List<FastIgnoreRule> rules = new ArrayList<FastIgnoreRule>();
+             while (st.hasMoreTokens()) {
+-                rules.add(new IgnoreRule(st.nextToken().trim()));
++                rules.add(new FastIgnoreRule(st.nextToken().trim()));
+             }
+             this.rules = Collections.unmodifiableList(rules);
+         } else {
+@@ -53,7 +53,7 @@ public class PathFilter extends TreeFilter {
+ 
+         if (!tw.isSubtree() && rules != null) {
+             String path = tw.getPathString();
+-            for (IgnoreRule rule : rules) {
++            for (FastIgnoreRule rule : rules) {
+                 if (rule.isMatch(path, tw.isSubtree())) {
+                     return !rule.getResult();
+                 }
+-- 
+2.4.2
+
