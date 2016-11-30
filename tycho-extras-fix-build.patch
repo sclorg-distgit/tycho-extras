@@ -1,0 +1,42 @@
+diff --git a/tycho-source-feature-plugin/src/main/java/org/eclipse/tycho/extras/sourcefeature/SourceFeatureMojo.java b/tycho-source-feature-plugin/src/main/java/org/eclipse/tycho/extras/sourcefeature/SourceFeatureMojo.java
+index 05baf87..2c62fb0 100644
+--- a/tycho-source-feature-plugin/src/main/java/org/eclipse/tycho/extras/sourcefeature/SourceFeatureMojo.java
++++ b/tycho-source-feature-plugin/src/main/java/org/eclipse/tycho/extras/sourcefeature/SourceFeatureMojo.java
+@@ -515,15 +515,19 @@ public class SourceFeatureMojo extends AbstractMojo {
+     }
+ 
+     private String getAttribute(PlexusConfiguration dom, String attrName) {
+-        String attr = dom.getAttribute(attrName);
+-        if (attr == null) {
+-            return null;
+-        }
+-        attr = attr.trim();
+-        if (attr.length() == 0) {
++        try {
++            String attr = dom.getAttribute(attrName);
++            if (attr == null) {
++                return null;
++            }
++            attr = attr.trim();
++            if (attr.length() == 0) {
++                return null;
++            }
++            return attr;
++        } catch (Exception e) {
+             return null;
+         }
+-        return attr;
+     }
+ 
+ }
+--- a/tycho-p2-extras-plugin/src/main/java/org/eclipse/tycho/plugins/p2/extras/CompareWithBaselineMojo.java.orig	2016-07-27 08:23:50.113095326 +0100
++++ b/tycho-p2-extras-plugin/src/main/java/org/eclipse/tycho/plugins/p2/extras/CompareWithBaselineMojo.java	2016-07-27 08:24:03.393937087 +0100
+@@ -72,7 +72,7 @@
+      * A list of p2 repositories to be used as baseline. Those are typically the most recent
+      * released versions of your project.
+      */
+-    @Parameter(property = "baselines", name = "baselines")
++    @Parameter(property = "baselines")
+     private List<String> baselines;
+ 
+     @Parameter(property = "skip")
